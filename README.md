@@ -1,33 +1,48 @@
 # Real-Time Yawn Detection with MediaPipe FaceMesh
 
-A real-time yawn detection system powered by **MediaPipe FaceMesh** and OpenCV, tracking the 6-stage physiological progression arc within a **4.0s - 7.0s** duration window.
+A real-time AI yawn detection system powered by **MediaPipe FaceMesh** (468 3D landmarks) and OpenCV, tracking the 4-stage physiological progression arc within an anatomically validated **2.5s - 10.5s** duration window.
 
 ---
 
 ## 🎯 Detection Logic & Progression Arc
 
 A true yawn follows a multi-phase physiological sequence:
-1. **Mouth Opening** (`Stage 1`): Lips begin separating past resting baseline.
-2. **Mouth Opening More** (`Stage 2`): Aperture widens significantly beyond normal conversational speech.
-3. **Mouth Finally Opened** (`Stage 3`): Peak yawn aperture (acme), held open under involuntary muscle tension.
-4. **Mouth Closing** (`Stage 4`): Lips begin active contraction downwards from peak.
-5. **Mouth Closing More** (`Stage 5`): Contraction continues toward resting position.
-6. **Mouth Finally Closed** (`Stage 6`): Lips return to resting closed state.
+1. **Stage 1: Mouth Opening Increases**: Lips begin separating past resting baseline.
+2. **Stage 2: Mouth Fully Opening (Peak Aperture)**: Wide aperture (acme) with sustained muscle dwell time (min 0.35s). Robust against jaw tremors and secondary stretch expansion.
+3. **Stage 3: Mouth Closing**: Active muscular contraction down from peak.
+4. **Stage 4: Mouth Closing More**: Returns to resting closed baseline (or lips touch gap <= 4.5px).
 
-**Timing Constraint**: The total cycle duration from initial opening to full closure must fall within **4.0 to 7.0 seconds**.
-- Faster movements (< 4.0s) such as quick speech, laughter, smiling, or gasps are rejected.
-- Prolonged open mouth (> 7.0s) such as holding mouth open or talking continuously times out and resets.
+**1:1 Synchronized Detection & Alarm**:
+- The confirmation banner (`*** YAWN #X DETECTED! ***`) and counter increment simultaneously at the exact frame of confirmation.
+- Cycle timer progress indicator tracks in-progress duration without false alarms.
+
+**Timing Constraint**: The total cycle duration from opening to full closure must fall within **2.5 to 10.5 seconds**.
+- Faster movements (< 2.4s) such as quick speech, laughter, smiling, or gasps are rejected.
+- Prolonged open mouth (> 10.5s) times out and resets.
 - Shallow openings (< peak MAR threshold) are rejected.
 
 ---
 
-## 🚀 How to Run
+## 🚀 Installation & Setup
 
-Activate your virtual environment and run:
+1. **Clone the repository**:
+```bash
+git clone https://github.com/robin1278/yawn_detection.git
+cd yawn_detection
+```
+
+2. **Install dependencies**:
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 💻 Usage
 
 ### 1. Live Webcam Mode
 ```bash
-.\venv\Scripts\python.exe main.py
+python main.py
 ```
 *(Optionally select another camera index with `--camera 1`)*
 
