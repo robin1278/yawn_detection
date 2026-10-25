@@ -109,6 +109,7 @@ class YawnDetector:
         self.min_closing_mar: float = 1.0
         self.is_completed_hold: bool = False
         self.completed_display_time: float = 0.0
+        self.has_sustained_peak: bool = False
 
     def calibrate_baseline(self, mar: float, landmark_data: Optional[Dict[str, Any]] = None):
         """Accumulate samples to compute natural resting mouth aspect ratio and facial proportions."""
@@ -165,6 +166,7 @@ class YawnDetector:
         self.min_closing_mar = 1.0
         self.is_completed_hold = False
         self.completed_display_time = 0.0
+        self.has_sustained_peak = False
 
     def get_elapsed_time(self, current_time: Optional[float] = None) -> float:
         """Returns elapsed time in current cycle, or 0.0 if IDLE."""
@@ -256,13 +258,15 @@ class YawnDetector:
         elif self.current_stage == YawnStage.FULLY_OPENING:
             self.peak_mar = max(self.peak_mar, mar)
             peak_dur = now - self.peak_hold_start
+            min_hold = getattr(self.config, 'min_peak_hold_duration', 0.35)
+            if peak_dur >= min_hold:
+                self.has_sustained_peak = True
 
             # Check for transition into closing phase (when mouth drops below wide aperture)
             t_close_entry = getattr(self.config, 'mar_thresh_mid', 0.45) + 0.08
             if mar < t_close_entry:
-                min_hold = getattr(self.config, 'min_peak_hold_duration', 0.35)
                 # Dwell time discriminator: Speech only momentarily flutters at peak (< 0.35s)
-                if peak_dur < min_hold:
+                if not self.has_sustained_peak:
                     self._reset_to_idle(f"Peak not sustained ({peak_dur:.2f}s < {min_hold:.2f}s) - Speech flutter rejected")
                     return self.current_stage, False
                 else:
@@ -278,13 +282,12 @@ class YawnDetector:
             self.min_closing_mar = min(self.min_closing_mar, mar)
 
             # If mouth re-opens to peak aperture, return to peak opening stage (secondary yawn stretch)
-            if mar >= (t_peak - 0.05):
+            if mar >= t_peak:
                 self.current_stage = YawnStage.FULLY_OPENING
                 self.stage_start_times[YawnStage.FULLY_OPENING] = now
-                self.peak_hold_start = now
                 self._set_status("Stage 2/4: Mouth fully opening (Secondary stretch)...")
             # Speech filter: If mouth re-opens moderately without reaching peak after starting to close
-            elif self.min_closing_mar < (t_mid - 0.05) and mar > (self.min_closing_mar + 0.28) and mar >= (t_open + 0.12):
+            elif mar > (self.min_closing_mar + 0.22) and mar >= (t_open + 0.08):
                 self._reset_to_idle("Speech detected during closing (Mouth re-opened) - Reset")
                 return self.current_stage, False
 
@@ -314,13 +317,12 @@ class YawnDetector:
             self.min_closing_mar = min(self.min_closing_mar, mar)
 
             # If mouth re-opens back to peak aperture, return to peak opening stage (secondary yawn stretch)
-            if mar >= (t_peak - 0.05):
+            if mar >= t_peak:
                 self.current_stage = YawnStage.FULLY_OPENING
                 self.stage_start_times[YawnStage.FULLY_OPENING] = now
-                self.peak_hold_start = now
                 self._set_status("Stage 2/4: Mouth fully opening (Secondary stretch)...")
             # Speech filter: If mouth re-opens during closing more
-            elif self.min_closing_mar < (t_mid - 0.05) and mar > (self.min_closing_mar + 0.28) and mar >= (t_open + 0.12):
+            elif mar > (self.min_closing_mar + 0.22) and mar >= (t_open + 0.08):
                 self._reset_to_idle("Speech detected during closing (Mouth re-opened) - Reset")
                 return self.current_stage, False
 
