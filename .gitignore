@@ -1,0 +1,27 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large media files (videos)
+recordings/*.mp4
+recordings/*.avi
+recordings/*.mov
+output/*.mp4
+output/*.avi
+output/*.mov
+snapshots/
+scratch/
+
+# IDE and system
+.idea/
+.vscode/
+.gemini/
+*.log
+Thumbs.db
+Desktop.ini
